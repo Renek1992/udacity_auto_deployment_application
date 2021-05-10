@@ -250,6 +250,11 @@ jobs:
             echo "Inventory content"
             cat inventory.txt
             ansible-playbook -i inventory.txt configure-server.yml
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .circleci/ansible/inventory.txt
+            - backend/
       # Here's where you will add some code to rollback on failure      
 
   run-migrations:
