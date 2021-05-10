@@ -346,8 +346,10 @@ jobs:
             pip install awscli
       - run:
           name: Deploy backend
+          no_output_timeout: 30m
           command: |
-            pwd            
+            pwd
+            ANSIBLE_HOST_KEY_CHECKING=False            
             tar -C backend -czvf backend_artifact.tar.gz .
             cd .circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
