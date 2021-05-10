@@ -5,10 +5,10 @@ Parameters:
   WorkflowID:
     Description: Unique identifier.
     Type: String
+    Default: 669700445040-us-east-1
 
 
 Resources:
-  
   CloudFrontOriginAccessIdentity:
     Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
     Properties:
