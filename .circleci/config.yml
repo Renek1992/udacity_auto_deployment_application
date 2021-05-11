@@ -7,32 +7,36 @@ commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
-      # Add parameter here   
+      workflow_id:
+        type: "string"
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            # Your code here
-            exit 1
+            aws cloudformation delete-stack --stack-name backend-<< parameters.workflow_id >>
+            aws cloudformation delete-stack --stack-name frontend-<< parameters.workflow_id >>
+            aws s3 rb s3://udapeople-<< parameters.workflow_id >> --force
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      # Add parameter here     
+      workflow_id:
+        type: "string"   
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
+          when: on_fail
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
-            if(( $SUCCESS==1 )); 
+            SUCCESS=$(curl -H "token: 0be42881-6cc0-492b-991f-6a00ea463187" \
+                --request GET \
+                https://api.memstash.io/values/migrations-<< parameters.workflow_id >>)
+            echo $SUCCESS
+            if(( $SUCCESS==1 ));
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              cd backend
+              npm i
+              npm run migration:revert
             fi
             
 jobs:
@@ -208,7 +212,8 @@ jobs:
             - .circleci/ansible/inventory.txt
             - .circleci/outputs/backend_url.txt
             - backend/
-      # Here's where you will add some code to rollback on failure      
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}      
 
   configure-infrastructure:
     docker:
@@ -256,7 +261,8 @@ jobs:
           paths:
             - .circleci/ansible/inventory.txt
             - backend/
-      # Here's where you will add some code to rollback on failure      
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}    
 
   run-migrations:
     docker:
@@ -290,8 +296,7 @@ jobs:
               --data '0' \
               https://api.memstash.io/values/migrations-${CIRCLE_WORKFLOW_ID:0:7}
             fi
-            echo Key: migrations-${CIRCLE_WORKFLOW_ID:0:7}
-     # Here's where you will add some code to rollback on failure      
+            echo Key: migrations-${CIRCLE_WORKFLOW_ID:0:7}  
 
   deploy-frontend:
     docker:
@@ -325,13 +330,15 @@ jobs:
             npm run build
             cd dist
             aws s3 sync . s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --delete
-      # Here's where you will add some code to rollback on failure      
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
                     
   deploy-backend:
     docker:
       - image: python:3.7-alpine3.11
     steps:
-      # Checkout code from git
       - checkout
       - add_ssh_keys:
           fingerprints: [3e:fd:98:8c:f1:93:18:34:2f:ce:ce:c4:2e:35:7b:74]
@@ -353,7 +360,10 @@ jobs:
             tar -C backend -czvf backend_artifact.tar.gz .
             cd .circleci/ansible
             ansible-playbook -i inventory.txt deploy-backend.yml
-      # Here's where you will add some code to rollback on failure  
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
 
   smoke-test:
     docker:
@@ -395,6 +405,8 @@ jobs:
             else
               return 1
             fi
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       # Here's where you will add some code to rollback on failure  
 
 #   cloudfront-update:
@@ -410,6 +422,8 @@ jobs:
 #           name: Update cloudfront distribution
 #           command: |
 #             # your code here
+        # - destroy-environment:
+        #     workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 #       # Here's where you will add some code to rollback on failure  
 
 # cleanup:
