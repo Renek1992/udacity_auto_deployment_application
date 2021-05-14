@@ -93,7 +93,7 @@ jobs:
           name: Test front-end
           command: |
             cd frontend
-            npm audit fix --audit-level=critical --force
+            npm audit fix 
             npm run test
       - save_cache:
           paths: [frontend/node_modules]
@@ -114,7 +114,7 @@ jobs:
           name: Test back-end
           command: |
             cd backend
-            npm audit fix --audit-level=critical --force
+            npm audit fix 
             npm run test
       - save_cache:
           paths: [backend/node_modules]
@@ -135,7 +135,7 @@ jobs:
           name: Scan front-end
           command: |
             cd frontend
-            npm audit fix --audit-level=critical --force
+            npm audit fix 
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
@@ -155,7 +155,7 @@ jobs:
           name: Scan back-end
           command: |
             cd backend
-            npm audit fix --audit-level=critical --force
+            npm audit fix 
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
@@ -327,7 +327,7 @@ jobs:
           name: Deploy frontend objects
           command: |
             cd frontend
-            npm audit fix --audit-level=critical --force
+            npm audit fix 
             BACKEND_IP=$(curl -H "token: 0be42881-6cc0-492b-991f-6a00ea463187" \
               --request GET https://api.memstash.io/values/hosts-deployed-${CIRCLE_WORKFLOW_ID:0:7})
             export API_URL="http://${BACKEND_IP}:3030"
